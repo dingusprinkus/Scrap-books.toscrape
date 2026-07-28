@@ -24,21 +24,11 @@ for link in soup.find_all("a", href=lambda t: t and "category/books/" in t):
     furl = site + href
     # print(furl)
     category.append((name, furl))
-    
-        
-    # split_parts = href.rstrip("/").split("/")
-    # print(split_parts)
 
-    # slug = split_parts[-2] if split_parts[-1] == "index.html" else split_parts[-1]
-
-    # if "category/books/" in href:
-    #     category.append(slug)
-    # elif href.startswith("catalogue/"):
-    #     books.append(slug)
 
 for name, cat_url in category:
     next_url = cat_url
-    
+
     # Limitar num de pag pra teste
     page_count = 0
     max_page = 3
@@ -47,11 +37,13 @@ for name, cat_url in category:
         page = urllib.request.urlopen(next_url)
         soup = BeautifulSoup(page, "html.parser")
 
-        for article in soup.find_all("article", class_="product_pod"):
+        for article in soup.find_all("article", class_=["product_pod", ""]):
             book_title = article.h3.a["title"]
-            #print(book_tittle, name)
-            books.append({"book": book_title, "category": name})
-            
+            book_price = article.find("p", class_="price_color").get_text()
+            convert_strip_price = float(book_price[1:])
+            #print(book_title, name, book_price)
+            books.append({"book": book_title, "category": name, "price": convert_strip_price})
+
         next_link = soup.find("li", class_="next")
         if next_link:
             next_href = next_link.a["href"]
@@ -63,6 +55,6 @@ for name, cat_url in category:
 
 
 with open("scrap_books.csv", "w", encoding="utf-8") as file:
-    write = csv.DictWriter(file, fieldnames=["book", "category"])
+    write = csv.DictWriter(file, fieldnames=["book", "category", "price"])
     write.writeheader()
     write.writerows(books)
