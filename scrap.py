@@ -1,3 +1,5 @@
+import csv
+
 from bs4 import BeautifulSoup
 import urllib.request
 import re
@@ -45,10 +47,10 @@ for name, cat_url in category:
         page = urllib.request.urlopen(next_url)
         soup = BeautifulSoup(page, "html.parser")
 
-        for article in soup.find_all("article", class_="product_prod"):
-            book_tittle = article.h3.a["tittle"]
-            print(book_tittle, name)
-            #book.append({"book:" book_tittle, "category": name})
+        for article in soup.find_all("article", class_="product_pod"):
+            book_title = article.h3.a["title"]
+            #print(book_tittle, name)
+            books.append({"book": book_title, "category": name})
             
         next_link = soup.find("li", class_="next")
         if next_link:
@@ -58,9 +60,9 @@ for name, cat_url in category:
             next_url = None
 
         page_count += 1
-        
-            
 
 
-# print("Books: \n", books)
-print("Categories: \n", category)
+with open("scrap_books.csv", "w", encoding="utf-8") as file:
+    write = csv.DictWriter(file, fieldnames=["book", "category"])
+    write.writeheader()
+    write.writerows(books)
