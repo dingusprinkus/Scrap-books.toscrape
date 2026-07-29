@@ -1,5 +1,5 @@
 import csv
-
+import pandas as pd
 from bs4 import BeautifulSoup
 import urllib.request
 import re
@@ -44,11 +44,13 @@ for name, cat_url in category:
             book_title = article.h3.a["title"]
             book_price = article.find("p", class_="price_color").get_text()
             book_rating = article.find("p", class_="star-rating")["class"]
+            book_stock = article.find("p", class_="instock").get_text().strip()
 
             convert_strip_price = float(book_price[1:])
-            word_to_number_rating = rating_system[book_rating[1]]
+            # Pega o ultimo index da lista do book_rating e mapeia a palavra para um numero usando a rating_system
+            word_to_number_rating = rating_system[book_rating[-1]]
 
-            # print(word_to_number_rating)
+            # print(book_stock)
             # print(book_title, name, convert_strip_price)
             books.append(
                 {
@@ -56,6 +58,7 @@ for name, cat_url in category:
                     "category": name,
                     "price": convert_strip_price,
                     "star-rating": word_to_number_rating,
+                    "stock-availability": book_stock,
                 }
             )
 
@@ -69,9 +72,29 @@ for name, cat_url in category:
         page_count += 1
 
 
-with open("scrap_books.csv", "w", encoding="utf-8") as file:
-    write = csv.DictWriter(
-        file, fieldnames=["book", "category", "price", "star-rating"]
-    )
-    write.writeheader()
-    write.writerows(books)
+df = pd.DataFrame(books)
+
+
+def sort_by_price(df, descending=False):
+    return df.sort_values("price", ascending=not descending)
+
+
+def avg_price_category(df, descending=False):
+    avg = df.groupby("category")["price"].mean().round(2)
+    return avg.sort_values(ascending=not descending)
+
+
+def save_to_csv(data, filename="data_scrap_book.csv"):
+    with open(filename, "w", newline="", encoding="utf-8") as file:
+        write = csv.DictWriter(
+            file,
+            fieldnames=[
+                "book",
+                "category",
+                "price",
+                "star-rating",
+                "stock-availability",
+            ],
+        )
+        write.writeheader()
+        write.writerows(data)
