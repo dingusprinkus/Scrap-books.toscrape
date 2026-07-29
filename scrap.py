@@ -14,13 +14,16 @@ soup = BeautifulSoup(html_page, "html.parser")
 books = []
 category = []
 
+rating_system = {"One": 1, "Two": 2, "Three": 3, "Four": 4, "Five": 5}
+
+
 # Encontra todas as <a> tags que contem category/books/ no href
 for link in soup.find_all("a", href=lambda t: t and "category/books/" in t):
     href = link.get("href")
-    
+
     # extrai apenas o texto das categorias
     name = link.text.strip()
-    
+
     furl = site + href
     # print(furl)
     category.append((name, furl))
@@ -31,18 +34,30 @@ for name, cat_url in category:
 
     # Limitar num de pag pra teste
     page_count = 0
-    max_page = 3
+    max_page = 1
 
     while next_url and page_count < max_page:
         page = urllib.request.urlopen(next_url)
         soup = BeautifulSoup(page, "html.parser")
 
-        for article in soup.find_all("article", class_=["product_pod", ""]):
+        for article in soup.find_all("article", class_="product_pod"):
             book_title = article.h3.a["title"]
             book_price = article.find("p", class_="price_color").get_text()
+            book_rating = article.find("p", class_="star-rating")["class"]
+
             convert_strip_price = float(book_price[1:])
-            #print(book_title, name, book_price)
-            books.append({"book": book_title, "category": name, "price": convert_strip_price})
+            word_to_number_rating = rating_system[book_rating[1]]
+
+            # print(word_to_number_rating)
+            # print(book_title, name, convert_strip_price)
+            books.append(
+                {
+                    "book": book_title,
+                    "category": name,
+                    "price": convert_strip_price,
+                    "star-rating": word_to_number_rating,
+                }
+            )
 
         next_link = soup.find("li", class_="next")
         if next_link:
@@ -55,6 +70,8 @@ for name, cat_url in category:
 
 
 with open("scrap_books.csv", "w", encoding="utf-8") as file:
-    write = csv.DictWriter(file, fieldnames=["book", "category", "price"])
+    write = csv.DictWriter(
+        file, fieldnames=["book", "category", "price", "star-rating"]
+    )
     write.writeheader()
     write.writerows(books)
