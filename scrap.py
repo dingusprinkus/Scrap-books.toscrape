@@ -2,8 +2,8 @@ import csv
 import pandas as pd
 from bs4 import BeautifulSoup
 import urllib.request
-import re
-import time
+from analise import avg_price_category, sort_by_price
+import sqlite3
 
 site = "https://books.toscrape.com/"
 
@@ -25,7 +25,6 @@ for link in soup.find_all("a", href=lambda t: t and "category/books/" in t):
     name = link.text.strip()
 
     furl = site + href
-    # print(furl)
     category.append((name, furl))
 
 
@@ -44,21 +43,21 @@ for name, cat_url in category:
             book_title = article.h3.a["title"]
             book_price = article.find("p", class_="price_color").get_text()
             book_rating = article.find("p", class_="star-rating")["class"]
-            book_stock = article.find("p", class_="instock").get_text().strip()
+            book_stock = article.find("p", class_="instock").get_text()
 
             convert_strip_price = float(book_price[1:])
             # Pega o ultimo index da lista do book_rating e mapeia a palavra para um numero usando a rating_system
             word_to_number_rating = rating_system[book_rating[-1]]
 
-            # print(book_stock)
-            # print(book_title, name, convert_strip_price)
+            in_stock = "In stock" in book_stock
+
             books.append(
                 {
                     "book": book_title,
                     "category": name,
                     "price": convert_strip_price,
                     "star-rating": word_to_number_rating,
-                    "stock-availability": book_stock,
+                    "in-stock": in_stock,
                 }
             )
 
@@ -72,19 +71,7 @@ for name, cat_url in category:
         page_count += 1
 
 
-df = pd.DataFrame(books)
-
-
-def sort_by_price(df, descending=False):
-    return df.sort_values("price", ascending=not descending)
-
-
-def avg_price_category(df, descending=False):
-    avg = df.groupby("category")["price"].mean().round(2)
-    return avg.sort_values(ascending=not descending)
-
-
-def save_to_csv(data, filename="data_scrap_book.csv"):
+def save_to_csv(books, filename="data_scrap_book.csv"):
     with open(filename, "w", newline="", encoding="utf-8") as file:
         write = csv.DictWriter(
             file,
@@ -93,8 +80,51 @@ def save_to_csv(data, filename="data_scrap_book.csv"):
                 "category",
                 "price",
                 "star-rating",
-                "stock-availability",
+                "in-stock",
             ],
         )
         write.writeheader()
-        write.writerows(data)
+        write.writerows(books)
+
+
+# df = pd.read_csv("data_scrap_book.csv")
+# print(avg_price_category(df))
+# print(sort_by_price(df))
+
+
+def save_to_sql(books, db_name="books.db"):
+    conn = sqlite3.connect(db_name)
+    cursor = conn.cursor()
+
+    cursor.execute("""
+                       CREATE TABLE IF NOT EXISTS books(
+                       id INTEGER PRIMARY KEY AUTOINCREMENT,
+                       book TEXT,
+                       category TEXT,
+                       price REAL,
+                       rating INTEGER,
+                       in_stock INTEGER
+                       )
+                        """)
+
+    values = [
+        (
+            row["book"],
+            row["category"],
+            row["price"],
+            row["star-rating"],
+            row["in-stock"],
+        )
+        for row in books
+    ]
+
+    cursor.executemany(
+        "INSERT INTO books (book, category, price, rating, in_stock) VALUES (?, ?, ?, ?, ?)",
+        values,
+    )
+
+    conn.commit()
+    conn.close()
+
+
+save_to_sql(books)
