@@ -3,6 +3,7 @@ import pandas as pd
 from bs4 import BeautifulSoup
 import urllib.request
 from analise import avg_price_category, sort_by_price
+from sql_analise import avg_price_category_sql
 import sqlite3
 
 site = "https://books.toscrape.com/"
@@ -127,4 +128,16 @@ def save_to_sql(books, db_name="books.db"):
     conn.close()
 
 
-save_to_sql(books)
+def load_from_sql(db_name="books.db"):
+    conn = sqlite3.connect(db_name)
+
+    rows = pd.read_sql("SELECT * FROM books", conn)
+    conn.close()
+    return rows
+
+
+# result = load_from_sql()
+# print(result[:5])
+
+result = avg_price_category_sql()
+print(result[:10])
