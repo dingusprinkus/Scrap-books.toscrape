@@ -1,9 +1,10 @@
 import csv
+
 import pandas as pd
 from bs4 import BeautifulSoup
 import urllib.request
 from analise import avg_price_category, sort_by_price
-from sql_analise import avg_price_category_sql
+from sql_analise import avg_price_category_sql, price_higher_than, search_per_category
 import sqlite3
 
 site = "https://books.toscrape.com/"
@@ -138,6 +139,3 @@ def load_from_sql(db_name="books.db"):
 
 # result = load_from_sql()
 # print(result[:5])
-
-result = avg_price_category_sql()
-print(result[:10])
