@@ -76,3 +76,17 @@ def search_per_category(db_name="books.db"):
     #     print(f"Book Name: {row[0]}")
 
     return result
+
+
+def search_by_keyword(keyword, db_name="books.db"):
+    conn = sqlite3.connect(db_name)
+    cursor = conn.cursor()
+
+    query = f"""
+            SELECT book, price FROM books WHERE book LIKE ?"""
+
+    cursor.execute(query, (f"%{keyword}%",))
+    result = cursor.fetchall()
+    conn.close
+
+    return result
