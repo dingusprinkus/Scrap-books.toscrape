@@ -52,7 +52,18 @@ def search_per_category(db_name="books.db"):
     for i, cat in enumerate(categories):
         print(f"{i} - {cat}")
 
-    user_input = int(input("Escolha uma Categoria: "))
+    while True:
+        user_input = int(input("Escolha uma Categoria: "))
+        try:
+            u_input = int(user_input)
+        except ValueError:
+            print("Digite uma valor valido")
+
+        if u_input < 1 or u_input > len(categories):
+            print("Invalido")
+            continue
+        break
+
     user_choice = categories[user_input]
 
     query = "SELECT book FROM books WHERE category = ?"
