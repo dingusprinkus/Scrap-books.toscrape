@@ -22,7 +22,7 @@ def avg_price_category_sql(db_name="books.db", descending=False):
     return result
 
 
-def price_higher_than(price, db_name="books.db", descending=False):
+def price_higher_than(db_name="books.db", descending=False):
     conn = sqlite3.connect(db_name)
     cursor = conn.cursor()
 
@@ -34,7 +34,19 @@ def price_higher_than(price, db_name="books.db", descending=False):
             ORDER BY price {order}
             """
 
-    cursor.execute(query, (price,))
+    while True:
+        preco_input = int(input("Digite um valor:\n"))
+        try:
+            u_input = preco_input
+        except ValueError:
+            print("Digite um valor valido!")
+
+        if u_input <= 0:
+            print("Invalido")
+            continue
+        break
+
+    cursor.execute(query, (preco_input,))
     result = cursor.fetchall()
     conn.close()
 
@@ -57,7 +69,7 @@ def search_per_category(db_name="books.db"):
         try:
             u_input = int(user_input)
         except ValueError:
-            print("Digite uma valor valido")
+            print("Digite uma valor valido!")
 
         if u_input < 1 or u_input > len(categories):
             print("Invalido")
@@ -82,11 +94,10 @@ def search_by_keyword(keyword, db_name="books.db"):
     conn = sqlite3.connect(db_name)
     cursor = conn.cursor()
 
-    query = f"""
-            SELECT book, price FROM books WHERE book LIKE ?"""
+    query = """SELECT book, price FROM books WHERE book LIKE ?"""
 
     cursor.execute(query, (f"%{keyword}%",))
     result = cursor.fetchall()
-    conn.close
+    conn.close()
 
     return result

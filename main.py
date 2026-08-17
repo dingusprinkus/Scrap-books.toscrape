@@ -27,21 +27,20 @@ while True:
         avg_price = avg_price_category_sql()
 
         for name, price in avg_price:
-            print(f"Category: {name}, Average Price: {price}")
+            print(f"Categoria: {name}, Preco Medio: {price}")
 
     elif user_input == 3:
-        preco_input = int(input("Digite Preco: "))
-        select_price = price_higher_than(preco_input, descending=True)
+        select_price = price_higher_than(descending=True)
 
         for book_name, price in select_price:
-            print(f"Book Name: {book_name}, Price: {price}")
+            print(f"Nome Livro: {book_name}, Preco: {price}")
 
     elif user_input == 4:
         user_keyword = input("Digite uma Palavra:\n")
         search_keyword = search_by_keyword(user_keyword)
 
         for book_name, price in search_keyword:
-            print(f"Book Name {book_name}, Price: {price}")
+            print(f"Nome Livro: {book_name}, Preco: {price}")
 
     elif user_input == 0:
         break

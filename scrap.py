@@ -3,74 +3,68 @@ import csv
 import pandas as pd
 from bs4 import BeautifulSoup
 import urllib.request
-from analise import avg_price_category, sort_by_price
-from sql_analise import avg_price_category_sql, price_higher_than, search_per_category
 import sqlite3
 
-site = "https://books.toscrape.com/"
 
-html_page = urllib.request.urlopen(site)
+def scrap_books(site="https://books.toscrape.com/", max_page=50):
+    html_page = urllib.request.urlopen(site)
 
-soup = BeautifulSoup(html_page, "html.parser")
+    soup = BeautifulSoup(html_page, "html.parser")
 
-books = []
-category = []
+    books = []
+    category = []
 
-rating_system = {"One": 1, "Two": 2, "Three": 3, "Four": 4, "Five": 5}
+    rating_system = {"One": 1, "Two": 2, "Three": 3, "Four": 4, "Five": 5}
 
+    # Encontra todas as <a> tags que contem category/books/ no href
+    for link in soup.find_all("a", href=lambda t: t and "category/books/" in t):
+        href = link.get("href")
+        # extrai apenas o texto das categorias
+        name = link.text.strip()
+        furl = site + href
+        category.append((name, furl))
 
-# Encontra todas as <a> tags que contem category/books/ no href
-for link in soup.find_all("a", href=lambda t: t and "category/books/" in t):
-    href = link.get("href")
+    for name, cat_url in category:
+        next_url = cat_url
+        # Limitar num de pag pra teste
+        page_count = 0
 
-    # extrai apenas o texto das categorias
-    name = link.text.strip()
+        while next_url and page_count < max_page:
+            page = urllib.request.urlopen(next_url)
+            soup_page = BeautifulSoup(page, "html.parser")
 
-    furl = site + href
-    category.append((name, furl))
+            for article in soup_page.find_all("article", class_="product_pod"):
+                book_title = article.h3.a["title"]
+                book_price = article.find("p", class_="price_color").get_text()
+                book_rating = article.find("p", class_="star-rating")["class"]
+                book_stock = article.find("p", class_="instock").get_text()
 
+                convert_strip_price = float(book_price[1:])
+                # Pega o ultimo index da lista do book_rating e mapeia a palavra para um numero usando a rating_system
+                word_to_number_rating = rating_system[book_rating[-1]]
 
-for name, cat_url in category:
-    next_url = cat_url
+                in_stock = "In stock" in book_stock
 
-    # Limitar num de pag pra teste
-    page_count = 0
-    max_page = 1
+                books.append(
+                    {
+                        "book": book_title,
+                        "category": name,
+                        "price": convert_strip_price,
+                        "star-rating": word_to_number_rating,
+                        "in-stock": in_stock,
+                    }
+                )
 
-    while next_url and page_count < max_page:
-        page = urllib.request.urlopen(next_url)
-        soup = BeautifulSoup(page, "html.parser")
+            next_link = soup_page.find("li", class_="next")
+            if next_link:
+                next_href = next_link.a["href"]
+                next_url = cat_url.rsplit("/", 1)[0] + "/" + next_href
+            else:
+                next_url = None
 
-        for article in soup.find_all("article", class_="product_pod"):
-            book_title = article.h3.a["title"]
-            book_price = article.find("p", class_="price_color").get_text()
-            book_rating = article.find("p", class_="star-rating")["class"]
-            book_stock = article.find("p", class_="instock").get_text()
+            page_count += 1
 
-            convert_strip_price = float(book_price[1:])
-            # Pega o ultimo index da lista do book_rating e mapeia a palavra para um numero usando a rating_system
-            word_to_number_rating = rating_system[book_rating[-1]]
-
-            in_stock = "In stock" in book_stock
-
-            books.append(
-                {
-                    "book": book_title,
-                    "category": name,
-                    "price": convert_strip_price,
-                    "star-rating": word_to_number_rating,
-                    "in-stock": in_stock,
-                }
-            )
-
-        next_link = soup.find("li", class_="next")
-        if next_link:
-            next_href = next_link.a["href"]
-            next_url = cat_url.rsplit("/", 1)[0] + "/" + next_href
-        else:
-            next_url = None
-
-        page_count += 1
+    return books
 
 
 def save_to_csv(books, filename="data_scrap_book.csv"):
@@ -87,11 +81,6 @@ def save_to_csv(books, filename="data_scrap_book.csv"):
         )
         write.writeheader()
         write.writerows(books)
-
-
-# df = pd.read_csv("data_scrap_book.csv")
-# print(avg_price_category(df))
-# print(sort_by_price(df))
 
 
 def save_to_sql(books, db_name="books.db"):
@@ -129,13 +118,7 @@ def save_to_sql(books, db_name="books.db"):
     conn.close()
 
 
-def load_from_sql(db_name="books.db"):
-    conn = sqlite3.connect(db_name)
-
-    rows = pd.read_sql("SELECT * FROM books", conn)
-    conn.close()
-    return rows
-
-
-# result = load_from_sql()
-# print(result[:5])
+if __name__ == "__main__":
+    books = scrap_books()
+    save_to_csv(books)
+    save_to_sql(books)
