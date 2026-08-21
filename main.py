@@ -5,6 +5,21 @@ from sql_analise import (
     search_by_keyword,
 )
 
+
+def valid_input():
+    while True:
+        try:
+            preco_input = int(input("Digite um valor:\n"))
+
+        except ValueError:
+            print("Digite um valor valido!")
+            continue
+        if preco_input <= 0:
+            print("Invalido")
+            continue
+        return preco_input
+
+
 while True:
     user_input = int(
         input(
@@ -30,7 +45,8 @@ while True:
             print(f"Categoria: {name}, Preco Medio: {price}")
 
     elif user_input == 3:
-        select_price = price_higher_than(descending=True)
+        preco_input = valid_input()
+        select_price = price_higher_than(preco_input, descending=True)
 
         for book_name, price in select_price:
             print(f"Nome Livro: {book_name}, Preco: {price}")

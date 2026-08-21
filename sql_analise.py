@@ -22,7 +22,7 @@ def avg_price_category_sql(db_name="books.db", descending=False):
     return result
 
 
-def price_higher_than(db_name="books.db", descending=False):
+def price_higher_than(price, db_name="books.db", descending=False):
     conn = sqlite3.connect(db_name)
     cursor = conn.cursor()
 
@@ -34,19 +34,7 @@ def price_higher_than(db_name="books.db", descending=False):
             ORDER BY price {order}
             """
 
-    while True:
-        preco_input = int(input("Digite um valor:\n"))
-        try:
-            u_input = preco_input
-        except ValueError:
-            print("Digite um valor valido!")
-
-        if u_input <= 0:
-            print("Invalido")
-            continue
-        break
-
-    cursor.execute(query, (preco_input,))
+    cursor.execute(query, (price,))
     result = cursor.fetchall()
     conn.close()
 
